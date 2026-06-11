@@ -9,12 +9,14 @@ import { HealthPanel } from '@/components/dashboard/HealthPanel';
 import { RiskCard } from '@/components/dashboard/RiskCard';
 import { RecommendCard } from '@/components/recommendations/RecommendCard';
 import type { Satellite } from '@/types';
-
+import { getSatelliteHealth } from '@/lib/api';
+import { useSatelliteStore } from '@/store/satelliteStore';
 export default function SatelliteDetailPage() {
     const params = useParams();
     const satelliteId = params.id as string;
     const [satellite, setSatellite] = useState<Satellite | null>(null);
     const [loading, setLoading] = useState(true);
+    const { updateTelemetry } = useSatelliteStore();
 
     useEffect(() => {
         const fetchSatellite = async () => {
@@ -33,6 +35,42 @@ export default function SatelliteDetailPage() {
 
         fetchSatellite();
     }, [satelliteId]);
+
+    // Fetch and periodically update health data
+    useEffect(() => {
+        if (!satellite) return;
+
+        // Capture current satellite to avoid stale closures
+        const currentSatellite = satellite;
+        
+        const fetchHealthData = async () => {
+            try {
+                const noradId = String(currentSatellite.norad_id);
+                const healthData = await getSatelliteHealth(noradId, currentSatellite.name);
+                
+                // Update store with health data
+                updateTelemetry({
+                    satellite_id: currentSatellite.id,
+                    battery: healthData.battery,
+                    temperature: healthData.temperature,
+                    signal: healthData.signal,
+                    battery_percentage: healthData.battery,
+                    temperature_celsius: healthData.temperature,
+                    signal_strength: healthData.signal
+                });
+            } catch (error) {
+                console.error('Failed to fetch health data:', error);
+            }
+        };
+
+        // Fetch immediately
+        fetchHealthData();
+
+        // Refresh every 10 seconds
+        const intervalId = setInterval(fetchHealthData, 10000);
+
+        return () => clearInterval(intervalId);
+    }, [satellite?.id, updateTelemetry]); // Only re-run if satellite ID changes or updateTelemetry changes
 
     if (loading) {
         return <div className="flex items-center justify-center h-screen">Loading...</div>;

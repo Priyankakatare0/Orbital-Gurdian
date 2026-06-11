@@ -8,6 +8,7 @@ class CelesTrakService:
     
     # CelesTrak JSON API endpoint
     BASE_URL = "https://celestrak.org/NORAD/elements/gp.php"
+
     
     # Earth's gravitational parameter (km³/s²)
     MU = 398600.4418
@@ -55,7 +56,7 @@ class CelesTrakService:
             async with httpx.AsyncClient() as client:
                 url = f"{CelesTrakService.BASE_URL}?GROUP=STATIONS&FORMAT=JSON"
                 
-                response = await client.get(url, timeout=60.0)
+                response = await client.get( url, timeout=10)
                 response.raise_for_status()
                 
                 data = response.json()
@@ -77,8 +78,8 @@ class CelesTrakService:
                         satellite = {
                             'OBJECT_NAME': sat.get('OBJECT_NAME', ''),
                             'NORAD_CAT_ID': sat.get('NORAD_CAT_ID', None),
-                            'TLE_LINE1': sat.get('TLE_LINE1', ''),
-                            'TLE_LINE2': sat.get('TLE_LINE2', ''),
+                            # 'TLE_LINE1': sat.get('TLE_LINE1', ''),
+                            # 'TLE_LINE2': sat.get('TLE_LINE2', ''),
                             'name': sat.get('OBJECT_NAME', ''),
                             'norad_id': sat.get('NORAD_CAT_ID', None),
 
